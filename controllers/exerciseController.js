@@ -26,12 +26,12 @@ const getExercises = async (req, res, next) => {
         video_url,
         sub_category,
         title_tr, title_en, title_de, title_ar, title_fr, 
-        title_ko, title_ja, title_es, title_it, title_hi, title_pt,
+        title_ko, title_ja, title_es, title_it, title_hi, title_pt, title_ru, title_ch,
         duration,
         benefits_tr, benefits_en, benefits_de, benefits_ar, benefits_fr,
-        benefits_ko, benefits_ja, benefits_es, benefits_it, benefits_hi, benefits_pt,
+        benefits_ko, benefits_ja, benefits_es, benefits_it, benefits_hi, benefits_pt, benefits_ru, benefits_ch,
         explain_tr, explain_en, explain_de, explain_ar, explain_fr,
-        explain_ko, explain_ja, explain_es, explain_it, explain_hi, explain_pt,
+        explain_ko, explain_ja, explain_es, explain_it, explain_hi, explain_pt, explain_ru, explain_ch,
         steps,
         is_premium,
         created_at,
@@ -88,7 +88,7 @@ const getExercises = async (req, res, next) => {
         category: exercise.category,
         tabCategory: exercise.tab_category,
         level: exercise.level,
-        videoImageURL: restrictContent ? null : exercise.video_image_url,
+        videoImageURL: exercise.video_image_url,
         videoUrl: restrictContent ? null : exercise.video_url,
         subCategory: exercise.sub_category,
         title: {
@@ -103,6 +103,8 @@ const getExercises = async (req, res, next) => {
           it: exercise.title_it,
           hi: exercise.title_hi,
           pt: exercise.title_pt,
+          ru: exercise.title_ru,
+          ch: exercise.title_ch,
         },
         duration: exercise.duration,
         benefits: {
@@ -117,6 +119,8 @@ const getExercises = async (req, res, next) => {
           it: exercise.benefits_it ? JSON.parse(exercise.benefits_it) : [],
           hi: exercise.benefits_hi ? JSON.parse(exercise.benefits_hi) : [],
           pt: exercise.benefits_pt ? JSON.parse(exercise.benefits_pt) : [],
+          ru: exercise.benefits_ru ? JSON.parse(exercise.benefits_ru) : [],
+          ch: exercise.benefits_ch ? JSON.parse(exercise.benefits_ch) : [],
         },
         explain: {
           tr: exercise.explain_tr,
@@ -130,6 +134,8 @@ const getExercises = async (req, res, next) => {
           it: exercise.explain_it,
           hi: exercise.explain_hi,
           pt: exercise.explain_pt,
+          ru: exercise.explain_ru,
+          ch: exercise.explain_ch,
         },
         steps: restrictContent ? [] : (exercise.steps ? JSON.parse(exercise.steps) : []),
         isPremium: isPremiumExercise,
@@ -170,12 +176,12 @@ const getExerciseById = async (req, res, next) => {
         video_url,
         sub_category,
         title_tr, title_en, title_de, title_ar, title_fr, 
-        title_ko, title_ja, title_es, title_it, title_hi, title_pt,
+        title_ko, title_ja, title_es, title_it, title_hi, title_pt, title_ru, title_ch,
         duration,
         benefits_tr, benefits_en, benefits_de, benefits_ar, benefits_fr,
-        benefits_ko, benefits_ja, benefits_es, benefits_it, benefits_hi, benefits_pt,
+        benefits_ko, benefits_ja, benefits_es, benefits_it, benefits_hi, benefits_pt, benefits_ru, benefits_ch,
         explain_tr, explain_en, explain_de, explain_ar, explain_fr,
-        explain_ko, explain_ja, explain_es, explain_it, explain_hi, explain_pt,
+        explain_ko, explain_ja, explain_es, explain_it, explain_hi, explain_pt, explain_ru, explain_ch,
         steps,
         is_premium,
         created_at,
@@ -208,7 +214,7 @@ const getExerciseById = async (req, res, next) => {
       category: exercise.category,
       tabCategory: exercise.tab_category,
       level: exercise.level,
-      videoImageURL: restrictContent ? null : exercise.video_image_url,
+      videoImageURL: exercise.video_image_url,
       videoUrl: restrictContent ? null : exercise.video_url,
       subCategory: exercise.sub_category,
       title: {
@@ -223,6 +229,8 @@ const getExerciseById = async (req, res, next) => {
         it: exercise.title_it,
         hi: exercise.title_hi,
         pt: exercise.title_pt,
+        ru: exercise.title_ru,
+        ch: exercise.title_ch,
       },
       duration: exercise.duration,
       benefits: {
@@ -237,6 +245,8 @@ const getExerciseById = async (req, res, next) => {
         it: exercise.benefits_it ? JSON.parse(exercise.benefits_it) : [],
         hi: exercise.benefits_hi ? JSON.parse(exercise.benefits_hi) : [],
         pt: exercise.benefits_pt ? JSON.parse(exercise.benefits_pt) : [],
+        ru: exercise.benefits_ru ? JSON.parse(exercise.benefits_ru) : [],
+        ch: exercise.benefits_ch ? JSON.parse(exercise.benefits_ch) : [],
       },
       explain: {
         tr: exercise.explain_tr,
@@ -250,6 +260,8 @@ const getExerciseById = async (req, res, next) => {
         it: exercise.explain_it,
         hi: exercise.explain_hi,
         pt: exercise.explain_pt,
+        ru: exercise.explain_ru,
+        ch: exercise.explain_ch,
       },
       steps: restrictContent ? [] : (exercise.steps ? JSON.parse(exercise.steps) : []),
       isPremium: isPremiumExercise,
@@ -473,7 +485,7 @@ function transformExercises(exercises, userIsPremium = false) {
       category: exercise.category,
       tabCategory: exercise.tab_category,
       level: exercise.level,
-      videoImageURL: restrictContent ? null : exercise.video_image_url,
+      videoImageURL: exercise.video_image_url,
       videoUrl: restrictContent ? null : exercise.video_url,
       subCategory: exercise.sub_category,
       title: {
@@ -488,6 +500,8 @@ function transformExercises(exercises, userIsPremium = false) {
         it: exercise.title_it,
         hi: exercise.title_hi,
         pt: exercise.title_pt,
+        ru: exercise.title_ru,
+        ch: exercise.title_ch,
       },
       duration: exercise.duration,
       benefits: {
@@ -502,6 +516,8 @@ function transformExercises(exercises, userIsPremium = false) {
         it: exercise.benefits_it ? JSON.parse(exercise.benefits_it) : [],
         hi: exercise.benefits_hi ? JSON.parse(exercise.benefits_hi) : [],
         pt: exercise.benefits_pt ? JSON.parse(exercise.benefits_pt) : [],
+        ru: exercise.benefits_ru ? JSON.parse(exercise.benefits_ru) : [],
+        ch: exercise.benefits_ch ? JSON.parse(exercise.benefits_ch) : [],
       },
       explain: {
         tr: exercise.explain_tr,
@@ -515,6 +531,8 @@ function transformExercises(exercises, userIsPremium = false) {
         it: exercise.explain_it,
         hi: exercise.explain_hi,
         pt: exercise.explain_pt,
+        ru: exercise.explain_ru,
+        ch: exercise.explain_ch,
       },
       steps: restrictContent ? [] : (exercise.steps ? JSON.parse(exercise.steps) : []),
       isPremium: isPremiumExercise,
@@ -545,7 +563,7 @@ const searchExercises = async (req, res, next) => {
 
     // Validate and set language (default: 'en')
     const languageCode = language || 'en';
-    const validLanguages = ['tr', 'en', 'de', 'ar', 'fr', 'ko', 'ja', 'es', 'it', 'hi', 'pt', 'ru'];
+    const validLanguages = ['tr', 'en', 'de', 'ar', 'fr', 'ko', 'ja', 'es', 'it', 'hi', 'pt', 'ru', 'ch'];
     const searchLanguage = validLanguages.includes(languageCode) ? languageCode : 'en';
 
     // Map language code to database column
@@ -561,7 +579,8 @@ const searchExercises = async (req, res, next) => {
       'it': 'title_it',
       'hi': 'title_hi',
       'pt': 'title_pt',
-      'ru': 'title_en', // Fallback to English if Russian not available
+      'ru': 'title_ru',
+      'ch': 'title_ch',
     };
 
     const titleColumn = titleColumnMap[searchLanguage] || 'title_en';
@@ -582,12 +601,12 @@ const searchExercises = async (req, res, next) => {
         video_url,
         sub_category,
         title_tr, title_en, title_de, title_ar, title_fr, 
-        title_ko, title_ja, title_es, title_it, title_hi, title_pt,
+        title_ko, title_ja, title_es, title_it, title_hi, title_pt, title_ru, title_ch,
         duration,
         benefits_tr, benefits_en, benefits_de, benefits_ar, benefits_fr,
-        benefits_ko, benefits_ja, benefits_es, benefits_it, benefits_hi, benefits_pt,
+        benefits_ko, benefits_ja, benefits_es, benefits_it, benefits_hi, benefits_pt, benefits_ru, benefits_ch,
         explain_tr, explain_en, explain_de, explain_ar, explain_fr,
-        explain_ko, explain_ja, explain_es, explain_it, explain_hi, explain_pt,
+        explain_ko, explain_ja, explain_es, explain_it, explain_hi, explain_pt, explain_ru, explain_ch,
         steps,
         is_premium,
         created_at,
@@ -620,7 +639,7 @@ const searchExercises = async (req, res, next) => {
         category: exercise.category,
         tabCategory: exercise.tab_category,
         level: exercise.level,
-        videoImageURL: restrictContent ? null : exercise.video_image_url,
+        videoImageURL: exercise.video_image_url,
         videoUrl: restrictContent ? null : exercise.video_url,
         subCategory: exercise.sub_category,
         title: {
@@ -635,6 +654,8 @@ const searchExercises = async (req, res, next) => {
           it: exercise.title_it,
           hi: exercise.title_hi,
           pt: exercise.title_pt,
+          ru: exercise.title_ru,
+          ch: exercise.title_ch,
         },
         duration: exercise.duration,
         benefits: {
@@ -649,6 +670,8 @@ const searchExercises = async (req, res, next) => {
           it: exercise.benefits_it ? JSON.parse(exercise.benefits_it) : [],
           hi: exercise.benefits_hi ? JSON.parse(exercise.benefits_hi) : [],
           pt: exercise.benefits_pt ? JSON.parse(exercise.benefits_pt) : [],
+          ru: exercise.benefits_ru ? JSON.parse(exercise.benefits_ru) : [],
+          ch: exercise.benefits_ch ? JSON.parse(exercise.benefits_ch) : [],
         },
         explain: {
           tr: exercise.explain_tr,
@@ -662,6 +685,8 @@ const searchExercises = async (req, res, next) => {
           it: exercise.explain_it,
           hi: exercise.explain_hi,
           pt: exercise.explain_pt,
+          ru: exercise.explain_ru,
+          ch: exercise.explain_ch,
         },
         steps: restrictContent ? [] : (exercise.steps ? JSON.parse(exercise.steps) : []),
         isPremium: isPremiumExercise,
