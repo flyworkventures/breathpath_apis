@@ -88,7 +88,7 @@ const getExercises = async (req, res, next) => {
         category: exercise.category,
         tabCategory: exercise.tab_category,
         level: exercise.level,
-        videoImageURL: restrictContent ? null : exercise.video_image_url,
+        videoImageURL: exercise.video_image_url,
         videoUrl: restrictContent ? null : exercise.video_url,
         subCategory: exercise.sub_category,
         title: {
@@ -208,7 +208,7 @@ const getExerciseById = async (req, res, next) => {
       category: exercise.category,
       tabCategory: exercise.tab_category,
       level: exercise.level,
-      videoImageURL: restrictContent ? null : exercise.video_image_url,
+      videoImageURL: exercise.video_image_url,
       videoUrl: restrictContent ? null : exercise.video_url,
       subCategory: exercise.sub_category,
       title: {
@@ -473,7 +473,7 @@ function transformExercises(exercises, userIsPremium = false) {
       category: exercise.category,
       tabCategory: exercise.tab_category,
       level: exercise.level,
-      videoImageURL: restrictContent ? null : exercise.video_image_url,
+      videoImageURL: exercise.video_image_url,
       videoUrl: restrictContent ? null : exercise.video_url,
       subCategory: exercise.sub_category,
       title: {
@@ -620,7 +620,7 @@ const searchExercises = async (req, res, next) => {
         category: exercise.category,
         tabCategory: exercise.tab_category,
         level: exercise.level,
-        videoImageURL: restrictContent ? null : exercise.video_image_url,
+        videoImageURL: exercise.video_image_url,
         videoUrl: restrictContent ? null : exercise.video_url,
         subCategory: exercise.sub_category,
         title: {
@@ -697,3 +697,4 @@ module.exports = {
   getTabCategories,
   searchExercises,
 };
+
