@@ -8,7 +8,15 @@ const TITLE_LANGS = ['tr', 'en', 'de', 'ar', 'fr', 'ko', 'ja', 'es', 'it', 'hi',
 const BENEFIT_LANGS = TITLE_LANGS;
 
 async function columnExists(table, column) {
-  const rows = await db.query(`SHOW COLUMNS FROM \`${table}\` LIKE ?`, [column]);
+  const rows = await db.query(
+    `SELECT 1
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [table, column]
+  );
   return rows.length > 0;
 }
 

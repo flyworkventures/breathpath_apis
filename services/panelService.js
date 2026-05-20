@@ -20,14 +20,26 @@ let schemaCache = {
 
 async function columnExists(table, column) {
   const rows = await db.query(
-    `SHOW COLUMNS FROM \`${table}\` LIKE ?`,
-    [column]
+    `SELECT 1
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [table, column]
   );
   return rows.length > 0;
 }
 
 async function tableExists(table) {
-  const rows = await db.query('SHOW TABLES LIKE ?', [table]);
+  const rows = await db.query(
+    `SELECT 1
+     FROM information_schema.TABLES
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+     LIMIT 1`,
+    [table]
+  );
   return rows.length > 0;
 }
 
