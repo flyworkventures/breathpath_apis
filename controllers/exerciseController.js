@@ -5,6 +5,8 @@
 
 const db = require('../config/database');
 const logger = require('../utils/logger');
+const exerciseService = require('../services/exerciseService');
+const { transformExercise } = require('../utils/exerciseTransform');
 
 /**
  * Get all exercises with optional filters
@@ -725,6 +727,37 @@ const searchExercises = async (req, res, next) => {
   }
 };
 
+/**
+ * Create exercise (admin / panel)
+ * POST /api/exercises
+ * Auth: X-Panel-Api-Key (same as /panel)
+ * Body: mobile exercise shape (category, tabCategory, level, title{}, benefits{}, explain{}, steps, duration, ...)
+ */
+const createExercise = async (req, res, next) => {
+  try {
+    const row = await exerciseService.createExercise(req.body);
+    const transformed = transformExercise(row, true);
+
+    logger.info(`Exercise created via API: id=${row.id}, category=${row.category}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Exercise created successfully',
+      data: transformed,
+    });
+  } catch (error) {
+    if (error.statusCode === 400) {
+      return res.status(400).json({
+        success: false,
+        error: error.message,
+        code: error.code || 'VALIDATION_ERROR',
+      });
+    }
+    logger.error('Create exercise error:', error);
+    next(error);
+  }
+};
+
 module.exports = {
   getExercises,
   getExerciseById,
@@ -734,4 +767,5 @@ module.exports = {
   getCategories,
   getTabCategories,
   searchExercises,
+  createExercise,
 };

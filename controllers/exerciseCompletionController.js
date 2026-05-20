@@ -5,6 +5,7 @@
 
 const db = require('../config/database');
 const logger = require('../utils/logger');
+const panelService = require('../services/panelService');
 
 /**
  * Complete an exercise
@@ -116,6 +117,9 @@ const completeExercise = async (req, res, next) => {
     );
 
     logger.info(`User ${uid} completed exercise ${exerciseIdInt}. Stats: time=${newTotalTime}s, count=${newCompletedCount}, streak=${newStreak}`);
+
+    // Panel analytics only — failure does not affect mobile response
+    await panelService.logExerciseCompletion(uid, exerciseIdInt, exerciseDuration);
 
     res.json({
       success: true,

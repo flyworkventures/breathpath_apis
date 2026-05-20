@@ -7,134 +7,84 @@ const axios = require('axios');
 const path = require('path');
 const logger = require('./logger');
 
+function buildCdnPublicUrl(storagePath, remotePath) {
+  if (storagePath && storagePath.trim()) {
+    const cleanStoragePath = storagePath.trim().replace(/\/$/, '');
+    return `https://${cleanStoragePath}/${remotePath}`;
+  }
+  const pullZone = process.env.BUNNY_PULL_ZONE || process.env.BUNNY_STORAGE_ZONE_NAME;
+  const cleanPullZone = String(pullZone).replace(/\.b-cdn\.net.*$/, '').split('/')[0];
+  return `https://${cleanPullZone}.b-cdn.net/${remotePath}`;
+}
+
 /**
  * Upload file to Bunny CDN Storage
- * @param {Buffer|Stream} fileBuffer - File buffer or stream
- * @param {string} fileName - File name (will be prefixed with user ID)
- * @param {string} uid - User ID for unique file naming
- * @returns {Promise<string>} CDN URL of uploaded file
+ * @param {Buffer} fileBuffer
+ * @param {string} fileName
+ * @param {{ folder?: string, namePrefix?: string }} options
+ * @returns {Promise<string>} Public CDN URL
+ */
+async function uploadFileToCdn(fileBuffer, fileName, options = {}) {
+  const storageZoneName = process.env.BUNNY_STORAGE_ZONE_NAME;
+  const storageZonePassword = process.env.BUNNY_STORAGE_ZONE_PASSWORD;
+  const storagePath = process.env.BUNNY_STORAGE_PATH || '';
+  const folder = (options.folder || 'profiles').replace(/^\/+|\/+$/g, '');
+  const namePrefix = (options.namePrefix || 'file').replace(/[^a-zA-Z0-9-_]/g, '_');
+
+  if (!storageZoneName || !storageZonePassword) {
+    throw new Error('Bunny CDN credentials not configured');
+  }
+  if (!fileBuffer || !Buffer.isBuffer(fileBuffer)) {
+    throw new Error('Invalid file buffer');
+  }
+
+  const fileExtension = path.extname(fileName || '') || '';
+  const sanitizedFileName = `${namePrefix}-${Date.now()}${fileExtension}`;
+  const remotePath = `${folder}/${sanitizedFileName}`;
+  const uploadUrl = `https://storage.bunnycdn.com/${storageZoneName}/${remotePath}`;
+  const contentType = getContentType(fileExtension);
+
+  logger.info(`Uploading to Bunny CDN: ${uploadUrl} (${fileBuffer.length} bytes)`);
+
+  try {
+    await axios.put(uploadUrl, fileBuffer, {
+      headers: {
+        AccessKey: storageZonePassword,
+        'Content-Type': contentType,
+      },
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+      validateStatus: (status) => status >= 200 && status < 300,
+    });
+  } catch (error) {
+    if (error.response) {
+      const errorData = typeof error.response.data === 'string'
+        ? error.response.data
+        : JSON.stringify(error.response.data);
+      throw new Error(
+        `Bunny CDN upload failed: ${error.response.status} ${error.response.statusText} - ${errorData}`
+      );
+    }
+    if (error.request) {
+      throw new Error('Bunny CDN upload failed: No response from server');
+    }
+    throw new Error(`Failed to upload file to Bunny CDN: ${error.message}`);
+  }
+
+  const cdnUrl = buildCdnPublicUrl(storagePath, remotePath);
+  logger.info(`File uploaded to Bunny CDN: ${cdnUrl}`);
+  return cdnUrl;
+}
+
+/**
+ * Profile photo upload (mobile)
  */
 async function uploadFile(fileBuffer, fileName, uid) {
-  try {
-    const storageZoneName = process.env.BUNNY_STORAGE_ZONE_NAME;
-    const storageZonePassword = process.env.BUNNY_STORAGE_ZONE_PASSWORD;
-    // Storage path format: BUNNY_STORAGE_PATH/profiles/filename
-    // Example: breathpath.b-cdn.net/profiles/filename.png
-    const storagePath = process.env.BUNNY_STORAGE_PATH || '';
-
-    if (!storageZoneName || !storageZonePassword) {
-      throw new Error('Bunny CDN credentials not configured');
-    }
-
-    // Validate file buffer
-    if (!fileBuffer || !Buffer.isBuffer(fileBuffer)) {
-      throw new Error('Invalid file buffer');
-    }
-
-    // Generate unique file name: {uid}-{timestamp}.{ext}
-    const timestamp = Date.now();
-    const fileExtension = path.extname(fileName);
-    // Sanitize file name - remove special characters
-    const sanitizedUid = uid.replace(/[^a-zA-Z0-9-_]/g, '_');
-    const sanitizedFileName = `${sanitizedUid}-${timestamp}${fileExtension}`;
-    
-    // Build remote path: profiles/filename
-    // This is the path where file will be stored in Bunny CDN storage
-    const remotePath = `profiles/${sanitizedFileName}`;
-
-    // Bunny CDN Storage API endpoint
-    // Path should NOT be URL encoded - Bunny CDN expects raw path
-    const uploadUrl = `https://storage.bunnycdn.com/${storageZoneName}/${remotePath}`;
-
-    logger.info(`Uploading to Bunny CDN: ${uploadUrl}`);
-    logger.info(`File size: ${fileBuffer.length} bytes`);
-    logger.info(`Remote path: ${remotePath}`);
-
-    // Get content type based on file extension
-    const contentType = getContentType(fileExtension);
-    logger.info(`Uploading with Content-Type: ${contentType}`);
-
-    // Upload file using PUT request
-    let response;
-    try {
-      response = await axios.put(uploadUrl, fileBuffer, {
-        headers: {
-          'AccessKey': storageZonePassword,
-          'Content-Type': contentType,
-        },
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
-        validateStatus: function (status) {
-          // Accept 200, 201, and 204 as success
-          return status >= 200 && status < 300;
-        },
-      });
-    } catch (axiosError) {
-      logger.error('Axios error during upload:', {
-        message: axiosError.message,
-        response: axiosError.response ? {
-          status: axiosError.response.status,
-          statusText: axiosError.response.statusText,
-          data: axiosError.response.data,
-        } : null,
-      });
-      throw axiosError;
-    }
-
-    logger.info(`Bunny CDN upload response status: ${response.status}`);
-
-    // Construct CDN URL
-    // URL format: https://{storage-path}/profiles/{filename}
-    // Example: https://breathpath.b-cdn.net/profiles/filename.png
-    let cdnUrl;
-    if (storagePath && storagePath.trim()) {
-      const cleanStoragePath = storagePath.trim();
-      cdnUrl = `https://${cleanStoragePath}/profiles/${sanitizedFileName}`;
-    } else {
-      // Fallback: use pull zone if storage path not set
-      const pullZone = process.env.BUNNY_PULL_ZONE || storageZoneName;
-      const cleanPullZone = pullZone.replace(/\.b-cdn\.net.*$/, '').split('/')[0];
-      cdnUrl = `https://${cleanPullZone}.b-cdn.net/profiles/${sanitizedFileName}`;
-    }
-
-    logger.info(`File uploaded to Bunny CDN: ${cdnUrl}`);
-    logger.info(`Storage path: ${storagePath}, Remote path: ${remotePath}, File name: ${sanitizedFileName}`);
-
-    return cdnUrl;
-  } catch (error) {
-    // Enhanced error logging
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      const errorData = typeof error.response.data === 'string' 
-        ? error.response.data 
-        : JSON.stringify(error.response.data);
-      
-      logger.error('Bunny CDN upload error response:', {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: errorData,
-        url: uploadUrl,
-      });
-      
-      throw new Error(`Bunny CDN upload failed: ${error.response.status} ${error.response.statusText} - ${errorData}`);
-    } else if (error.request) {
-      // The request was made but no response was received
-      logger.error('Bunny CDN upload error - no response:', {
-        message: error.message,
-        url: uploadUrl,
-      });
-      throw new Error('Bunny CDN upload failed: No response from server. Check your network connection and Bunny CDN credentials.');
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      logger.error('Bunny CDN upload error:', {
-        message: error.message,
-        stack: error.stack,
-        url: uploadUrl,
-      });
-      throw new Error(`Failed to upload file to Bunny CDN: ${error.message}`);
-    }
-  }
+  const sanitizedUid = uid.replace(/[^a-zA-Z0-9-_]/g, '_');
+  return uploadFileToCdn(fileBuffer, fileName, {
+    folder: 'profiles',
+    namePrefix: sanitizedUid,
+  });
 }
 
 /**
@@ -204,9 +154,59 @@ function getContentType(extension) {
     '.gif': 'image/gif',
     '.webp': 'image/webp',
     '.svg': 'image/svg+xml',
+    '.mp4': 'video/mp4',
+    '.mov': 'video/quicktime',
+    '.webm': 'video/webm',
+    '.m4v': 'video/x-m4v',
   };
 
   return contentTypes[extension.toLowerCase()] || 'application/octet-stream';
+}
+
+const IMAGE_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+const VIDEO_MIME_TYPES = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-m4v'];
+const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.webm', '.m4v'];
+
+function isAllowedFile(file, { mimeTypes, extensions }) {
+  if (!file) return false;
+  const ext = path.extname(file.originalname || '').toLowerCase();
+  const mime = file.mimetype?.toLowerCase();
+  return mimeTypes.includes(mime) || extensions.includes(ext);
+}
+
+function validateExerciseImageFile(file) {
+  const maxSize =
+    (parseInt(process.env.PANEL_IMAGE_MAX_MB, 10) || 10) * 1024 * 1024;
+  if (!file || file.size > maxSize) return false;
+  return isAllowedFile(file, {
+    mimeTypes: IMAGE_MIME_TYPES,
+    extensions: IMAGE_EXTENSIONS,
+  });
+}
+
+function validateExerciseVideoFile(file) {
+  const maxSize =
+    (parseInt(process.env.PANEL_VIDEO_MAX_MB, 10) || 150) * 1024 * 1024;
+  if (!file || file.size > maxSize) return false;
+  return isAllowedFile(file, {
+    mimeTypes: VIDEO_MIME_TYPES,
+    extensions: VIDEO_EXTENSIONS,
+  });
+}
+
+async function uploadExerciseVideo(fileBuffer, fileName) {
+  return uploadFileToCdn(fileBuffer, fileName, {
+    folder: 'exercises/videos',
+    namePrefix: 'video',
+  });
+}
+
+async function uploadExerciseImage(fileBuffer, fileName) {
+  return uploadFileToCdn(fileBuffer, fileName, {
+    folder: 'exercises/images',
+    namePrefix: 'cover',
+  });
 }
 
 /**
@@ -254,7 +254,12 @@ function validateImageFile(file) {
 
 module.exports = {
   uploadFile,
+  uploadFileToCdn,
+  uploadExerciseVideo,
+  uploadExerciseImage,
   deleteFile,
   validateImageFile,
+  validateExerciseImageFile,
+  validateExerciseVideoFile,
   getContentType,
 };

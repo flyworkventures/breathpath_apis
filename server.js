@@ -21,6 +21,7 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const tabCategoryRoutes = require('./routes/tabCategoryRoutes');
 const moodRoutes = require('./routes/moodRoutes');
 const favoriteRoutes = require('./routes/favoriteRoutes');
+const panelRoutes = require('./routes/panelRoutes');
 
 // Create Express app
 const app = express();
@@ -47,7 +48,7 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Panel-Api-Key', 'X-Panel-Key'],
 }));
 
 // Body parsing middleware
@@ -78,7 +79,10 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes
+// App Panel (admin) — separate auth, does not affect mobile /api/*
+app.use('/panel', panelRoutes);
+
+// API routes (mobile app)
 app.use('/api/auth', authRoutes);
 app.use('/api/exercises', exerciseRoutes);
 app.use('/api/categories', categoryRoutes);
