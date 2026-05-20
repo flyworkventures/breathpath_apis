@@ -769,3 +769,4 @@ module.exports = {
   searchExercises,
   createExercise,
 };
+

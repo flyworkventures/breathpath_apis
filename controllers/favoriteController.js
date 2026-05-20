@@ -429,3 +429,4 @@ module.exports = {
   getFavorites,
   checkFavorite,
 };
+
