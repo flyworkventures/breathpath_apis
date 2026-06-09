@@ -28,6 +28,7 @@ router.post(
   mediaController.uploadExerciseImagePanel
 );
 router.get('/analyse', panelController.analyse);
+router.get('/metadata/categories', panelController.getCategoryMetadata);
 
 router.get('/users', panelController.listUsers);
 router.get('/users/:id', panelController.getUser);
