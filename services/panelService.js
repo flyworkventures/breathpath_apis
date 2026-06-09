@@ -57,8 +57,19 @@ async function hasCompletionEventsTable() {
   return schemaCache.completionEvents;
 }
 
+/** Named TZ → offset (MySQL timezone tabloları olmadan CONVERT_TZ çalışsın diye). */
+const TZ_OFFSETS = {
+  'Europe/Istanbul': '+03:00',
+  UTC: '+00:00',
+};
+
 function getTimezone() {
   return process.env.PANEL_TIMEZONE || 'Europe/Istanbul';
+}
+
+function getTimezoneOffset() {
+  const tz = getTimezone();
+  return TZ_OFFSETS[tz] || '+03:00';
 }
 
 function getDailyDays() {
@@ -67,13 +78,24 @@ function getDailyDays() {
   return Math.min(n, 90);
 }
 
+/** UTC datetime → panel timezone günü (CONVERT_TZ NULL ise DATE(column) yedek). */
 function panelDateSql(column) {
-  const tz = getTimezone();
-  return `DATE(CONVERT_TZ(${column}, '+00:00', ?))`;
+  const offset = getTimezoneOffset();
+  return `COALESCE(DATE(CONVERT_TZ(${column}, '+00:00', '${offset}')), DATE(${column}))`;
+}
+
+function normalizeDateKey(date) {
+  if (date == null) return null;
+  if (date instanceof Date) {
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toISOString().split('T')[0];
+  }
+  const raw = String(date).trim();
+  if (!raw || raw === 'null' || raw === 'undefined') return null;
+  return raw.split('T')[0];
 }
 
 async function getAnalyse() {
-  const tz = getTimezone();
   const days = getDailyDays();
   const hasStatus = await hasExercisesPanelStatus();
   const hasEvents = await hasCompletionEventsTable();
@@ -84,8 +106,7 @@ async function getAnalyse() {
       SUM(CASE WHEN ${panelDateSql('last_active')} = ${panelDateSql('UTC_TIMESTAMP()')} THEN 1 ELSE 0 END) AS loginsToday,
       SUM(CASE WHEN ${panelDateSql('account_created_date')} = ${panelDateSql('UTC_TIMESTAMP()')} THEN 1 ELSE 0 END) AS newUsersToday
     FROM users
-    WHERE is_active = TRUE`,
-    [tz, tz, tz, tz]
+    WHERE is_active = TRUE`
   );
   const userTotals = userTotalsRows[0] || {};
 
@@ -120,8 +141,7 @@ async function getAnalyse() {
         COUNT(DISTINCT uid) AS activeWorkoutUsersToday
       FROM exercise_completion_events
       WHERE status = 'completed'
-        AND ${panelDateSql('completed_at')} = ${panelDateSql('UTC_TIMESTAMP()')}`,
-      [tz, tz]
+        AND ${panelDateSql('completed_at')} = ${panelDateSql('UTC_TIMESTAMP()')}`
     );
     const e = eRows[0] || {};
     workoutTotals.workoutsCompletedToday = Number(e.workoutsCompletedToday || 0);
@@ -133,8 +153,7 @@ async function getAnalyse() {
       FROM users
       WHERE is_active = TRUE
         AND last_exercise_date IS NOT NULL
-        AND ${panelDateSql('last_exercise_date')} = ${panelDateSql('UTC_TIMESTAMP()')}`,
-      [tz, tz]
+        AND ${panelDateSql('last_exercise_date')} = ${panelDateSql('UTC_TIMESTAMP()')}`
     );
     workoutTotals.activeWorkoutUsersToday = Number(eRows[0]?.activeWorkoutUsersToday || 0);
   }
@@ -148,7 +167,7 @@ async function getAnalyse() {
       AND account_created_date >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? DAY)
     GROUP BY date
     ORDER BY date ASC`,
-    [tz, days]
+    [days]
   );
 
   const dailyLogins = await db.query(
@@ -161,7 +180,7 @@ async function getAnalyse() {
       AND last_active >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? DAY)
     GROUP BY date
     ORDER BY date ASC`,
-    [tz, days]
+    [days]
   );
 
   let dailyCompletions = [];
@@ -176,15 +195,14 @@ async function getAnalyse() {
         AND completed_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? DAY)
       GROUP BY date
       ORDER BY date ASC`,
-      [tz, days]
+      [days]
     );
   }
 
   const dateMap = new Map();
   const addRow = (date, patch) => {
-    const key = date instanceof Date
-      ? date.toISOString().split('T')[0]
-      : String(date).split('T')[0];
+    const key = normalizeDateKey(date);
+    if (!key) return;
     const prev = dateMap.get(key) || {
       date: key,
       logins: 0,
@@ -669,3 +687,4 @@ module.exports = {
   logExerciseCompletion,
   hasCompletionEventsTable,
 };
+
