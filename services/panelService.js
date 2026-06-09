@@ -610,10 +610,52 @@ async function logExerciseCompletion(uid, exerciseId, durationSeconds) {
   }
 }
 
+async function getCategoryMetadata() {
+  const empty = { tabCategories: {}, categories: {} };
+  const hasTabs = await tableExists('tab_categories');
+  const hasCats = await tableExists('categories');
+  if (!hasTabs && !hasCats) return empty;
+
+  const tabCategories = {};
+  if (hasTabs) {
+    const tabs = await db.query(
+      `SELECT tab_category_code AS code, name_tr, name_en
+       FROM tab_categories
+       WHERE is_active = TRUE
+       ORDER BY \`order\` ASC, id ASC`
+    );
+    for (const row of tabs) {
+      tabCategories[row.code] = {
+        tr: row.name_tr || row.name_en || row.code,
+        en: row.name_en || row.code,
+      };
+    }
+  }
+
+  const categories = {};
+  if (hasCats) {
+    const cats = await db.query(
+      `SELECT category_code AS code, tab_category AS tabCategory, name_tr, name_en
+       FROM categories
+       ORDER BY id ASC`
+    );
+    for (const row of cats) {
+      categories[row.code] = {
+        tr: row.name_tr || row.name_en || row.code,
+        en: row.name_en || row.code,
+        tabCategory: row.tabCategory || null,
+      };
+    }
+  }
+
+  return { tabCategories, categories };
+}
+
 module.exports = {
   getTimezone,
   getDailyDays,
   getAnalyse,
+  getCategoryMetadata,
   listUsers,
   getUserById,
   patchUser,
