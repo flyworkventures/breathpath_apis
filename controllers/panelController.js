@@ -224,9 +224,20 @@ const getUserWorkout = async (req, res, next) => {
   }
 };
 
+const getCategoryMetadata = async (req, res, next) => {
+  try {
+    const data = await panelService.getCategoryMetadata();
+    res.json({ contractVersion: CONTRACT_VERSION, data });
+  } catch (error) {
+    logger.error('Panel category metadata error:', error);
+    next(error);
+  }
+};
+
 module.exports = {
   health,
   analyse,
+  getCategoryMetadata,
   listUsers,
   getUser,
   patchUser,
