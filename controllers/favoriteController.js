@@ -403,6 +403,7 @@ const checkFavorite = async (req, res, next) => {
  */
 async function isUserPremium(uid) {
   try {
+    const { hasPremiumDatas } = require('../utils/jsonHelpers');
     const users = await db.query(
       'SELECT premium_datas FROM users WHERE uid = ?',
       [uid]
@@ -412,11 +413,8 @@ async function isUserPremium(uid) {
       return false;
     }
 
-    const premiumDatas = users[0].premium_datas 
-      ? JSON.parse(users[0].premium_datas) 
-      : [];
-
-    return Array.isArray(premiumDatas) && premiumDatas.length > 0;
+    // mysql2 may return JSON columns already parsed — never raw JSON.parse alone
+    return hasPremiumDatas(users[0].premium_datas);
   } catch (error) {
     logger.error('Error checking premium status:', error);
     return false;
