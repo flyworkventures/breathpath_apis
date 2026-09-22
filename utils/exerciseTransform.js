@@ -73,7 +73,7 @@ function transformExercise(exercise, userIsPremium = true) {
       ch: exercise.explain_zh ?? null,
       zh: exercise.explain_zh ?? null,
     },
-    steps: restrictContent ? [] : parseJsonField(exercise.steps, []),
+    steps: parseJsonField(exercise.steps, []),
     isPremium: isPremiumExercise,
     createdAt: exercise.created_at,
     updatedAt: exercise.updated_at,

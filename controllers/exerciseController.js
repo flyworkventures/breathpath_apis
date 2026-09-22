@@ -7,6 +7,7 @@ const db = require('../config/database');
 const logger = require('../utils/logger');
 const exerciseService = require('../services/exerciseService');
 const { transformExercise } = require('../utils/exerciseTransform');
+const { parseJson } = require('../utils/jsonHelpers');
 
 /**
  * Get all exercises with optional filters
@@ -142,7 +143,7 @@ const getExercises = async (req, res, next) => {
           ch: exercise.explain_zh ?? null,
           zh: exercise.explain_zh ?? null,
         },
-        steps: restrictContent ? [] : (exercise.steps ? JSON.parse(exercise.steps) : []),
+        steps: parseJson(exercise.steps, []),
         isPremium: isPremiumExercise,
         createdAt: exercise.created_at,
         updatedAt: exercise.updated_at,
@@ -271,7 +272,7 @@ const getExerciseById = async (req, res, next) => {
         ch: exercise.explain_zh ?? null,
         zh: exercise.explain_zh ?? null,
       },
-      steps: restrictContent ? [] : (exercise.steps ? JSON.parse(exercise.steps) : []),
+      steps: parseJson(exercise.steps, []),
       isPremium: isPremiumExercise,
       createdAt: exercise.created_at,
       updatedAt: exercise.updated_at,
@@ -541,7 +542,7 @@ function transformExercises(exercises, userIsPremium = false) {
         ch: exercise.explain_zh ?? null,
         zh: exercise.explain_zh ?? null,
       },
-      steps: restrictContent ? [] : (exercise.steps ? JSON.parse(exercise.steps) : []),
+      steps: parseJson(exercise.steps, []),
       isPremium: isPremiumExercise,
       createdAt: exercise.created_at,
       updatedAt: exercise.updated_at,
@@ -699,7 +700,7 @@ const searchExercises = async (req, res, next) => {
           ch: exercise.explain_zh ?? null,
           zh: exercise.explain_zh ?? null,
         },
-        steps: restrictContent ? [] : (exercise.steps ? JSON.parse(exercise.steps) : []),
+        steps: parseJson(exercise.steps, []),
         isPremium: isPremiumExercise,
         createdAt: exercise.created_at,
         updatedAt: exercise.updated_at,

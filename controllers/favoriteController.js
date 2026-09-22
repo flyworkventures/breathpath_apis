@@ -5,6 +5,7 @@
 
 const db = require('../config/database');
 const logger = require('../utils/logger');
+const { parseJson } = require('../utils/jsonHelpers');
 
 /**
  * Add exercise to favorites
@@ -317,7 +318,7 @@ const getFavorites = async (req, res, next) => {
           ch: exercise.explain_zh ?? null,
           zh: exercise.explain_zh ?? null,
         },
-        steps: restrictContent ? [] : (exercise.steps ? JSON.parse(exercise.steps) : []),
+        steps: parseJson(exercise.steps, []),
         isPremium: isPremiumExercise,
         createdAt: exercise.created_at,
         updatedAt: exercise.updated_at,
